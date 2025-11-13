@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Kolik mi zbývá</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; background: #fafafa; }
+h1 { margin-top: 0; }
+h2 { margin-top: 24px; font-size: 18px; }
+input, button { padding: 10px; width: 100%; margin: 5px 0; font-size: 16px; box-sizing: border-box; }
+button { cursor: pointer; }
+.balance { font-size: 28px; font-weight: bold; margin: 15px 0; }
+.expense-item { background: #fff; padding: 8px 10px; margin: 4px 0; border-radius: 5px; font-size: 15px; }
+.deleteBtn { background: #ff4d4d; color: white; }
+.resetBtn { background: #000; color: #fff; margin-top: 15px; }
+</style>
+</head>
+<body>
+
+<h1>Kolik mi zbývá</h1>
+
+<h2>🏦 Nastav začátek měsíce</h2>
+<input id="startMoney" type="number" placeholder="Kolik ti zbývá z výplaty">
+<button onclick="setStartMoney()">Uložit částku</button>
+
+<h2>💸 Přidat výdaj</h2>
+<input id="expenseNote" type="text" placeholder="Popis (jídlo, benzín…)">
+<input id="expenseValue" type="number" placeholder="Kolik jsi utratil">
+<button onclick="addExpense()">Přidat</button>
+
+<button class="deleteBtn" onclick="deleteLastExpense()">Smazat poslední výdaj</button>
+<button class="resetBtn" onclick="resetAll()">RESET celého měsíce</button>
+
+<h2>💰 Zůstatek</h2>
+<div class="balance" id="balanceDisplay">0 Kč</div>
+
+<h2>📋 Seznam výdajů</h2>
+<div id="expenseList"></div>
+
+<script>
+let startMoney = Number(localStorage.getItem("startMoney")) || 0;
+let expenses;
+
+// migrace starých dat (jen čísla → objekty)
+try {
+    let raw = localStorage.getItem("expenses") || "[]";
+    let parsed = JSON.parse(raw);
+    if (parsed.length > 0 && typeof parsed[0] === "number") {
+        expenses = parsed.map(x => ({ amount: x, note: "" }));
+    } else {
+        expenses = parsed;
+    }
+} catch {
+    expenses = [];
+}
+
+function updateUI() {
+    let totalSpent = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    let balance = startMoney - totalSpent;
+
+    document.getElementById("balanceDisplay").textContent = balance + " Kč";
+
+    let list = document.getElementById("expenseList");
+    list.innerHTML = "";
+    expenses.forEach(e => {
+        let div = document.createElement("div");
+        div.className = "expense-item";
+        let text = "";
+        if (e.note && e.note.trim() !== "") text += e.note.trim() + " – ";
+        text += (e.amount || 0) + " Kč";
+        div.textContent = text;
+        list.appendChild(div);
+    });
+}
+
+function setStartMoney() {
+    let val = Number(document.getElementById("startMoney").value);
+    if (!val && val !== 0) return;
+    startMoney = val;
+    localStorage.setItem("startMoney", startMoney);
+    updateUI();
+}
+
+function addExpense() {
+    let val = Number(document.getElementById("expenseValue").value);
+    if (!val) return;
+    let note = document.getElementById("expenseNote").value;
+
+    expenses.push({ amount: val, note: note || "" });
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+
+    document.getElementById("expenseValue").value = "";
+    document.getElementById("expenseNote").value = "";
+    updateUI();
+}
+
+function deleteLastExpense() {
+    if (expenses.length === 0) return;
+    expenses.pop();
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+    updateUI();
+}
+
+function resetAll() {
+    if (!confirm("Opravdu chceš vymazat celý měsíc?")) return;
+
+    startMoney = 0;
+    expenses = [];
+
+    localStorage.setItem("startMoney", 0);
+    localStorage.setItem("expenses", JSON.stringify([]));
+
+    updateUI();
+}
+updateUI();
+</script>
+
+</body>
+</html>
