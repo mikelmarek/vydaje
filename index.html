@@ -73,7 +73,6 @@
     .section-title {
       font-size: 17px;
       font-weight: 600;
-      margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -89,10 +88,10 @@
 
     input {
       width: 100%;
-      padding: 12px 14px;
+      padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid #d1d5db;
-      font-size: 18px;
+      font-size: 17px;
       outline: none;
       background: #f9fafb;
       -webkit-appearance: none;
@@ -107,16 +106,16 @@
 
     .row {
       display: flex;
-      gap: 10px;
-      margin-top: 10px;
+      gap: 8px;
+      margin-top: 8px;
     }
 
     button {
       flex: 1;
-      padding: 13px 10px;
+      padding: 9px 8px;          /* menší tlačítka */
       border-radius: 999px;
       border: none;
-      font-size: 17px;
+      font-size: 15px;           /* menší font */
       font-weight: 600;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
@@ -129,7 +128,7 @@
     .info-line {
       display: flex;
       justify-content: space-between;
-      font-size: 15px;
+      font-size: 14px;
       margin-top: 4px;
     }
 
@@ -188,6 +187,33 @@
       color: #6b7280;
       margin-top: 4px;
     }
+
+    /* Collapsible income card */
+    .card-collapsible {
+      padding-top: 10px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 4px 2px 0;
+    }
+
+    .chevron {
+      font-size: 18px;
+      color: #6b7280;
+      margin-left: 8px;
+    }
+
+    .card-body {
+      margin-top: 8px;
+    }
+
+    .card-body.hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -198,25 +224,30 @@
     </div>
     <p class="subtitle">Sledování zbytku z výplaty s pevnými výdaji 💰</p>
 
-    <!-- Příjem + pravidelné výdaje -->
-    <div class="card">
-      <div class="section-title">📊 Příjem a pravidelné výdaje</div>
-
-      <label for="monthlyIncome">Měsíční příjem</label>
-      <input id="monthlyIncome" type="number" inputmode="decimal" placeholder="např. 150000">
-
-      <div class="row">
-        <button class="btn-primary" onclick="setMonthlyIncome()">Uložit příjem</button>
-        <button class="btn-secondary" onclick="prefillFromComputed()">Vyplnit zůstatek z teoretického</button>
+    <!-- Příjem + pravidelné výdaje (skládací) -->
+    <div class="card card-collapsible">
+      <div class="card-header" onclick="toggleIncomeSection()">
+        <div class="section-title">📊 Příjem a pravidelné výdaje</div>
+        <div class="chevron" id="incomeChevron">▾</div>
       </div>
 
-      <div class="info-line">
-        <div class="info-label">Pravidelné výdaje (všechny kategorie)</div>
-        <div class="info-value" id="regularTotalDisplay">0 Kč</div>
-      </div>
-      <div class="info-line">
-        <div class="info-label">Teoreticky zbývá</div>
-        <div class="info-value" id="computedRemainingDisplay">-</div>
+      <div class="card-body" id="incomeBody">
+        <label for="monthlyIncome">Měsíční příjem</label>
+        <input id="monthlyIncome" type="number" inputmode="decimal" placeholder="např. 150000">
+
+        <div class="row">
+          <button class="btn-primary" onclick="setMonthlyIncome()">Uložit příjem</button>
+          <button class="btn-secondary" onclick="prefillFromComputed()">Vyplnit zůstatek z teoretického</button>
+        </div>
+
+        <div class="info-line">
+          <div class="info-label">Pravidelné výdaje (všechny kategorie)</div>
+          <div class="info-value" id="regularTotalDisplay">0 Kč</div>
+        </div>
+        <div class="info-line">
+          <div class="info-label">Teoreticky zbývá</div>
+          <div class="info-value" id="computedRemainingDisplay">-</div>
+        </div>
       </div>
     </div>
 
@@ -274,6 +305,7 @@
     let monthlyIncome = Number(localStorage.getItem("monthlyIncome")) || 0;
     let regularItems;
     let computedRemaining = 0;
+    let incomeCollapsed = localStorage.getItem("incomeCollapsed") === "1";
 
     // načtení pravidelných položek z setup.html
     try {
@@ -306,6 +338,29 @@
       return startMoney - totalSpent;
     }
 
+    function applyIncomeCollapse(forceOpen = false) {
+      const body = document.getElementById("incomeBody");
+      const chevron = document.getElementById("incomeChevron");
+
+      if (forceOpen) {
+        incomeCollapsed = false;
+      }
+
+      if (incomeCollapsed) {
+        body.classList.add("hidden");
+        chevron.textContent = "▸";
+      } else {
+        body.classList.remove("hidden");
+        chevron.textContent = "▾";
+      }
+    }
+
+    function toggleIncomeSection() {
+      incomeCollapsed = !incomeCollapsed;
+      localStorage.setItem("incomeCollapsed", incomeCollapsed ? "1" : "0");
+      applyIncomeCollapse();
+    }
+
     function updateIncomeSection() {
       const incomeInput = document.getElementById("monthlyIncome");
       incomeInput.value = monthlyIncome || "";
@@ -327,6 +382,10 @@
       } else if (startMoney) {
         startInput.value = startMoney;
       }
+
+      // pokud ještě nic není nastavené, nech sekci otevřenou
+      const nothingSet = !monthlyIncome && regTotal === 0;
+      applyIncomeCollapse(nothingSet);
     }
 
     function updateUI() {
