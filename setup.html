@@ -120,7 +120,7 @@
 
     button {
       flex: 1;
-      padding: 11px 10px;
+      padding: 9px 8px;
       border-radius: 999px;
       border: none;
       font-size: 15px;
@@ -131,6 +131,7 @@
 
     .btn-primary   { background: #2563eb; color: #ffffff; }
     .btn-danger    { background: #ef4444; color: #ffffff; }
+    .btn-secondary { background: #e5e7eb; color: #111827; }
 
     .list {
       margin-top: 8px;
@@ -170,11 +171,16 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .item button {
+    .item-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
       flex: 0 0 auto;
-      padding: 6px 10px;
-      font-size: 13px;
-      border-radius: 999px;
+    }
+
+    .item-buttons button {
+      padding: 4px 8px;
+      font-size: 12px;
     }
 
     .empty {
@@ -188,6 +194,12 @@
       margin-top: -4px;
       margin-bottom: 10px;
       color: #111827;
+    }
+
+    .edit-label {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 6px;
     }
   </style>
 </head>
@@ -218,8 +230,10 @@
       <label for="nutneAmount">Částka</label>
       <input id="nutneAmount" type="number" inputmode="decimal" placeholder="např. 25000">
 
+      <div class="edit-label" id="nutneEditLabel"></div>
+
       <div class="row">
-        <button class="btn-primary" onclick="addItem('NUTNE')">Přidat NUTNÉ</button>
+        <button class="btn-primary" id="nutneBtn" onclick="submitItem('NUTNE')">Přidat NUTNÉ</button>
       </div>
     </div>
 
@@ -238,8 +252,10 @@
       <label for="dobroAmount">Částka</label>
       <input id="dobroAmount" type="number" inputmode="decimal" placeholder="např. 5000">
 
+      <div class="edit-label" id="dobroEditLabel"></div>
+
       <div class="row">
-        <button class="btn-primary" onclick="addItem('DOBROVOLNE')">Přidat DOBROVOLNÉ</button>
+        <button class="btn-primary" id="dobroBtn" onclick="submitItem('DOBROVOLNE')">Přidat DOBROVOLNÉ</button>
       </div>
     </div>
 
@@ -258,14 +274,19 @@
       <label for="promAmount">Částka</label>
       <input id="promAmount" type="number" inputmode="decimal" placeholder="např. 6000">
 
+      <div class="edit-label" id="promEditLabel"></div>
+
       <div class="row">
-        <button class="btn-primary" onclick="addItem('PROMENLIVE')">Přidat PROMĚNLIVÉ</button>
+        <button class="btn-primary" id="promBtn" onclick="submitItem('PROMENLIVE')">Přidat PROMĚNLIVÉ</button>
       </div>
     </div>
   </div>
 
   <script>
     let regularItems;
+
+    // index položky, která se právě edituje (nebo null)
+    let editingIndex = null;
 
     try {
       const raw = localStorage.getItem("regularItems") || "[]";
@@ -291,6 +312,11 @@
 
       const totalAll = regularItems.reduce((s, i) => s + (i.amount || 0), 0);
       document.getElementById("totalAllDisplay").textContent = totalAll + " Kč";
+
+      // pokud nic needituješ, smaž info labely a texty tlačítek
+      if (editingIndex === null) {
+        resetEditUI();
+      }
     }
 
     function renderList(listId, items, totalId) {
@@ -328,14 +354,25 @@
           amount.className = "item-amount";
           amount.textContent = (item.amount || 0) + " Kč";
 
-          const btn = document.createElement("button");
-          btn.className = "btn-danger";
-          btn.textContent = "Smazat";
-          btn.onclick = () => deleteItem(item.index);
+          const btns = document.createElement("div");
+          btns.className = "item-buttons";
+
+          const editBtn = document.createElement("button");
+          editBtn.className = "btn-secondary";
+          editBtn.textContent = "Upravit";
+          editBtn.onclick = () => startEdit(item.index);
+
+          const delBtn = document.createElement("button");
+          delBtn.className = "btn-danger";
+          delBtn.textContent = "Smazat";
+          delBtn.onclick = () => deleteItem(item.index);
+
+          btns.appendChild(editBtn);
+          btns.appendChild(delBtn);
 
           row.appendChild(left);
           row.appendChild(amount);
-          row.appendChild(btn);
+          row.appendChild(btns);
 
           listEl.appendChild(row);
         });
@@ -344,36 +381,92 @@
       document.getElementById(totalId).textContent = total + " Kč";
     }
 
-    function addItem(category) {
-      let nameId, amountId;
+    function submitItem(category) {
+      let nameId, amountId, btnId, labelId;
       if (category === "NUTNE") {
         nameId = "nutneName"; amountId = "nutneAmount";
+        btnId = "nutneBtn"; labelId = "nutneEditLabel";
       } else if (category === "DOBROVOLNE") {
         nameId = "dobroName"; amountId = "dobroAmount";
+        btnId = "dobroBtn"; labelId = "dobroEditLabel";
       } else {
         nameId = "promName"; amountId = "promAmount";
+        btnId = "promBtn"; labelId = "promEditLabel";
       }
 
       const name = document.getElementById(nameId).value.trim();
       const amount = Number(document.getElementById(amountId).value);
-
       if (!amount) return;
 
-      regularItems.push({
-        category,
-        name: name || "",
-        amount: amount
-      });
+      if (editingIndex !== null) {
+        // Ukládáme změnu existující položky
+        regularItems[editingIndex] = {
+          category,
+          name: name || "",
+          amount: amount
+        };
+        editingIndex = null;
+      } else {
+        // Přidáváme novou položku
+        regularItems.push({
+          category,
+          name: name || "",
+          amount: amount
+        });
+      }
 
       document.getElementById(nameId).value = "";
       document.getElementById(amountId).value = "";
+      document.getElementById(labelId).textContent = "";
+      document.getElementById(btnId).textContent =
+        category === "NUTNE" ? "Přidat NUTNÉ" :
+        category === "DOBROVOLNE" ? "Přidat DOBROVOLNÉ" :
+        "Přidat PROMĚNLIVÉ";
 
       saveRegular();
       render();
     }
 
+    function startEdit(index) {
+      const item = regularItems[index];
+      editingIndex = index;
+
+      // vyplnit správná pole podle kategorie
+      let nameId, amountId, btnId, labelId;
+      if (item.category === "NUTNE") {
+        nameId = "nutneName"; amountId = "nutneAmount";
+        btnId = "nutneBtn"; labelId = "nutneEditLabel";
+      } else if (item.category === "DOBROVOLNE") {
+        nameId = "dobroName"; amountId = "dobroAmount";
+        btnId = "dobroBtn"; labelId = "dobroEditLabel";
+      } else {
+        nameId = "promName"; amountId = "promAmount";
+        btnId = "promBtn"; labelId = "promEditLabel";
+      }
+
+      document.getElementById(nameId).value = item.name || "";
+      document.getElementById(amountId).value = item.amount || "";
+
+      document.getElementById(labelId).textContent = "Upravuješ existující položku, po uložení se přepíše.";
+      document.getElementById(btnId).textContent = "Uložit změnu";
+    }
+
+    function resetEditUI() {
+      document.getElementById("nutneEditLabel").textContent = "";
+      document.getElementById("dobroEditLabel").textContent = "";
+      document.getElementById("promEditLabel").textContent = "";
+
+      document.getElementById("nutneBtn").textContent = "Přidat NUTNÉ";
+      document.getElementById("dobroBtn").textContent = "Přidat DOBROVOLNÉ";
+      document.getElementById("promBtn").textContent = "Přidat PROMĚNLIVÉ";
+    }
+
     function deleteItem(index) {
       regularItems.splice(index, 1);
+      if (editingIndex === index) {
+        editingIndex = null;
+        resetEditUI();
+      }
       saveRegular();
       render();
     }
