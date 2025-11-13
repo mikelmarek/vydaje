@@ -16,7 +16,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
       background: #f3f4f6;
       color: #111827;
-      font-size: 18px;             /* základ větší */
+      font-size: 18px;
     }
 
     .app {
@@ -26,14 +26,38 @@
       padding: 16px 12px 24px;
     }
 
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
     h1 {
-      margin: 4px 0 10px;
+      margin: 0;
       font-size: 28px;
       font-weight: 700;
     }
 
+    .icon-button {
+      flex: 0 0 auto;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: none;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      text-decoration: none;
+      color: #111827;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     .subtitle {
-      margin: 0 0 18px;
+      margin: 4px 0 6px;
       font-size: 15px;
       color: #6b7280;
     }
@@ -102,6 +126,16 @@
     .btn-secondary { background: #e5e7eb; color: #111827; }
     .btn-danger    { background: #ef4444; color: #ffffff; }
 
+    .info-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+
+    .info-label { color: #6b7280; }
+    .info-value { font-weight: 600; }
+
     .balance-wrapper {
       display: flex;
       align-items: baseline;
@@ -158,19 +192,43 @@
 </head>
 <body>
   <div class="app">
-    <h1>Kolik mi zbývá</h1>
-    <p class="subtitle">Jednoduchá appka na sledování zbytku z výplaty 💰</p>
+    <div class="header-bar">
+      <h1>Kolik mi zbývá</h1>
+      <a href="setup.html" class="icon-button" aria-label="Nastavit pravidelné výdaje">⚙️</a>
+    </div>
+    <p class="subtitle">Sledování zbytku z výplaty s pevnými výdaji 💰</p>
 
-    <!-- Začátek měsíce -->
+    <!-- Příjem + pravidelné výdaje -->
     <div class="card">
-      <div class="section-title">🏦 Začátek měsíce</div>
+      <div class="section-title">📊 Příjem a pravidelné výdaje</div>
 
-      <label for="startMoney">Kolik ti zbývá z výplaty</label>
-      <input id="startMoney" type="number" inputmode="decimal" placeholder="např. 15000">
+      <label for="monthlyIncome">Měsíční příjem</label>
+      <input id="monthlyIncome" type="number" inputmode="decimal" placeholder="např. 150000">
 
       <div class="row">
-        <button class="btn-primary" onclick="setStartMoney()">Uložit částku</button>
-        <button class="btn-secondary" onclick="prefillFromBalance()">Doplnit ze zůstatku</button>
+        <button class="btn-primary" onclick="setMonthlyIncome()">Uložit příjem</button>
+        <button class="btn-secondary" onclick="prefillFromComputed()">Vyplnit zůstatek z teoretického</button>
+      </div>
+
+      <div class="info-line">
+        <div class="info-label">Pravidelné výdaje (všechny kategorie)</div>
+        <div class="info-value" id="regularTotalDisplay">0 Kč</div>
+      </div>
+      <div class="info-line">
+        <div class="info-label">Teoreticky zbývá</div>
+        <div class="info-value" id="computedRemainingDisplay">-</div>
+      </div>
+    </div>
+
+    <!-- Reálný zůstatek (startMoney) -->
+    <div class="card">
+      <div class="section-title">🏦 Reálný zůstatek na měsíc</div>
+
+      <label for="startMoney">Částka, se kterou reálně chceš pracovat</label>
+      <input id="startMoney" type="number" inputmode="decimal" placeholder="např. 20000">
+
+      <div class="row">
+        <button class="btn-primary" onclick="setStartMoney()">Uložit zůstatek</button>
       </div>
     </div>
 
@@ -197,7 +255,7 @@
     <!-- Zůstatek -->
     <div class="card">
       <div class="balance-wrapper">
-        <div class="balance-label">Aktuální zůstatek</div>
+        <div class="balance-label">Aktuální zůstatek podle výdajů</div>
         <div id="balanceDisplay" class="balance-value balance-positive">0 Kč</div>
       </div>
     </div>
@@ -213,9 +271,20 @@
 
   <script>
     let startMoney = Number(localStorage.getItem("startMoney")) || 0;
-    let expenses;
+    let monthlyIncome = Number(localStorage.getItem("monthlyIncome")) || 0;
+    let regularItems;
+    let computedRemaining = 0;
 
-    // migrace starého formátu (pole čísel) → pole objektů
+    // načtení pravidelných položek z setup.html
+    try {
+      const rawReg = localStorage.getItem("regularItems") || "[]";
+      regularItems = JSON.parse(rawReg);
+    } catch {
+      regularItems = [];
+    }
+
+    // načtení výdajů (denní tracking)
+    let expenses;
     try {
       const raw = localStorage.getItem("expenses") || "[]";
       const parsed = JSON.parse(raw);
@@ -228,12 +297,41 @@
       expenses = [];
     }
 
+    function getRegularTotal() {
+      return regularItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+    }
+
     function getBalance() {
       const totalSpent = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
       return startMoney - totalSpent;
     }
 
+    function updateIncomeSection() {
+      const incomeInput = document.getElementById("monthlyIncome");
+      incomeInput.value = monthlyIncome || "";
+
+      const regTotal = getRegularTotal();
+      document.getElementById("regularTotalDisplay").textContent = regTotal + " Kč";
+
+      if (monthlyIncome) {
+        computedRemaining = monthlyIncome - regTotal;
+        document.getElementById("computedRemainingDisplay").textContent = computedRemaining + " Kč";
+      } else {
+        computedRemaining = 0;
+        document.getElementById("computedRemainingDisplay").textContent = "-";
+      }
+
+      const startInput = document.getElementById("startMoney");
+      if (!startMoney && computedRemaining) {
+        startInput.value = computedRemaining;
+      } else if (startMoney) {
+        startInput.value = startMoney;
+      }
+    }
+
     function updateUI() {
+      updateIncomeSection();
+
       const balance = getBalance();
       const balanceEl = document.getElementById("balanceDisplay");
       balanceEl.textContent = balance + " Kč";
@@ -269,17 +367,25 @@
       });
     }
 
+    function setMonthlyIncome() {
+      const val = Number(document.getElementById("monthlyIncome").value);
+      if (!Number.isFinite(val)) return;
+      monthlyIncome = val;
+      localStorage.setItem("monthlyIncome", monthlyIncome);
+      updateUI();
+    }
+
+    function prefillFromComputed() {
+      if (!computedRemaining && computedRemaining !== 0) return;
+      document.getElementById("startMoney").value = computedRemaining;
+    }
+
     function setStartMoney() {
       const val = Number(document.getElementById("startMoney").value);
       if (!Number.isFinite(val)) return;
       startMoney = val;
       localStorage.setItem("startMoney", startMoney);
       updateUI();
-    }
-
-    function prefillFromBalance() {
-      const balance = getBalance();
-      document.getElementById("startMoney").value = balance;
     }
 
     function addExpense() {
