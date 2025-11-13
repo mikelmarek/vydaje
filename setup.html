@@ -65,25 +65,45 @@
     .card {
       background: #ffffff;
       border-radius: 16px;
-      padding: 14px 14px 16px;
+      padding: 10px 14px 14px;
       margin-bottom: 14px;
       box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding-top: 2px;
     }
 
     .section-title {
       font-size: 17px;
       font-weight: 600;
-      margin-bottom: 6px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 6px;
     }
 
-    .section-title span:last-child {
+    .section-total {
       font-size: 14px;
       color: #6b7280;
       font-weight: 500;
+      margin-right: 8px;
+    }
+
+    .chevron {
+      font-size: 18px;
+      color: #6b7280;
+    }
+
+    .section-body {
+      margin-top: 8px;
+    }
+
+    .hidden {
+      display: none;
     }
 
     label {
@@ -215,78 +235,98 @@
       Celkem všechny pravidelné výdaje: <strong id="totalAllDisplay">0 Kč</strong>
     </div>
 
-    <!-- Nutné -->
+    <!-- NUTNÉ -->
     <div class="card">
-      <div class="section-title">
-        <span>🔴 NUTNÉ</span>
-        <span id="totalNutne">0 Kč</span>
+      <div class="section-header" onclick="toggleSection('NUTNE')">
+        <div class="section-title">🔴 NUTNÉ</div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span class="section-total" id="totalNutne">0 Kč</span>
+          <span class="chevron" id="chevronNUTNE">▾</span>
+        </div>
       </div>
 
-      <div class="list" id="listNutne"></div>
+      <div class="section-body" id="bodyNUTNE">
+        <div class="list" id="listNutne"></div>
 
-      <label for="nutneName">Název položky</label>
-      <input id="nutneName" type="text" placeholder="hypotéka, daně bokem…">
+        <label for="nutneName">Název položky</label>
+        <input id="nutneName" type="text" placeholder="hypotéka, daně bokem…">
 
-      <label for="nutneAmount">Částka</label>
-      <input id="nutneAmount" type="number" inputmode="decimal" placeholder="např. 25000">
+        <label for="nutneAmount">Částka</label>
+        <input id="nutneAmount" type="number" inputmode="decimal" placeholder="např. 25000">
 
-      <div class="edit-label" id="nutneEditLabel"></div>
+        <div class="edit-label" id="nutneEditLabel"></div>
 
-      <div class="row">
-        <button class="btn-primary" id="nutneBtn" onclick="submitItem('NUTNE')">Přidat NUTNÉ</button>
+        <div class="row">
+          <button class="btn-primary" id="nutneBtn" onclick="submitItem('NUTNE')">Přidat NUTNÉ</button>
+        </div>
       </div>
     </div>
 
-    <!-- Dobrovolné -->
+    <!-- DOBROVOLNÉ -->
     <div class="card">
-      <div class="section-title">
-        <span>🟡 DOBROVOLNÉ</span>
-        <span id="totalDobro">0 Kč</span>
+      <div class="section-header" onclick="toggleSection('DOBROVOLNE')">
+        <div class="section-title">🟡 DOBROVOLNÉ</div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span class="section-total" id="totalDobro">0 Kč</span>
+          <span class="chevron" id="chevronDOBROVOLNE">▾</span>
+        </div>
       </div>
 
-      <div class="list" id="listDobro"></div>
+      <div class="section-body" id="bodyDOBROVOLNE">
+        <div class="list" id="listDobro"></div>
 
-      <label for="dobroName">Název položky</label>
-      <input id="dobroName" type="text" placeholder="investice, běh, předplatná…">
+        <label for="dobroName">Název položky</label>
+        <input id="dobroName" type="text" placeholder="investice, běh, předplatná…">
 
-      <label for="dobroAmount">Částka</label>
-      <input id="dobroAmount" type="number" inputmode="decimal" placeholder="např. 5000">
+        <label for="dobroAmount">Částka</label>
+        <input id="dobroAmount" type="number" inputmode="decimal" placeholder="např. 5000">
 
-      <div class="edit-label" id="dobroEditLabel"></div>
+        <div class="edit-label" id="dobroEditLabel"></div>
 
-      <div class="row">
-        <button class="btn-primary" id="dobroBtn" onclick="submitItem('DOBROVOLNE')">Přidat DOBROVOLNÉ</button>
+        <div class="row">
+          <button class="btn-primary" id="dobroBtn" onclick="submitItem('DOBROVOLNE')">Přidat DOBROVOLNÉ</button>
+        </div>
       </div>
     </div>
 
-    <!-- Proměnlivé -->
+    <!-- PROMĚNLIVÉ -->
     <div class="card">
-      <div class="section-title">
-        <span>🟢 PROMĚNLIVÉ</span>
-        <span id="totalProm">0 Kč</span>
+      <div class="section-header" onclick="toggleSection('PROMENLIVE')">
+        <div class="section-title">🟢 PROMĚNLIVÉ</div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span class="section-total" id="totalProm">0 Kč</span>
+          <span class="chevron" id="chevronPROMENLIVE">▾</span>
+        </div>
       </div>
 
-      <div class="list" id="listProm"></div>
+      <div class="section-body" id="bodyPROMENLIVE">
+        <div class="list" id="listProm"></div>
 
-      <label for="promName">Název položky</label>
-      <input id="promName" type="text" placeholder="nafta, data, atd.">
+        <label for="promName">Název položky</label>
+        <input id="promName" type="text" placeholder="nafta, data, atd.">
 
-      <label for="promAmount">Částka</label>
-      <input id="promAmount" type="number" inputmode="decimal" placeholder="např. 6000">
+        <label for="promAmount">Částka</label>
+        <input id="promAmount" type="number" inputmode="decimal" placeholder="např. 6000">
 
-      <div class="edit-label" id="promEditLabel"></div>
+        <div class="edit-label" id="promEditLabel"></div>
 
-      <div class="row">
-        <button class="btn-primary" id="promBtn" onclick="submitItem('PROMENLIVE')">Přidat PROMĚNLIVÉ</button>
+        <div class="row">
+          <button class="btn-primary" id="promBtn" onclick="submitItem('PROMENLIVE')">Přidat PROMĚNLIVÉ</button>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
     let regularItems;
-
-    // index položky, která se právě edituje (nebo null)
     let editingIndex = null;
+
+    // stav sbalení sekcí
+    const collapsedState = {
+      NUTNE:       localStorage.getItem("setupCollapsed_NUTNE") === "1",
+      DOBROVOLNE:  localStorage.getItem("setupCollapsed_DOBROVOLNE") === "1",
+      PROMENLIVE:  localStorage.getItem("setupCollapsed_PROMENLIVE") === "1",
+    };
 
     try {
       const raw = localStorage.getItem("regularItems") || "[]";
@@ -297,6 +337,35 @@
 
     function saveRegular() {
       localStorage.setItem("regularItems", JSON.stringify(regularItems));
+    }
+
+    function toggleSection(category) {
+      collapsedState[category] = !collapsedState[category];
+      localStorage.setItem(
+        "setupCollapsed_" + category,
+        collapsedState[category] ? "1" : "0"
+      );
+      applySectionCollapse(category);
+    }
+
+    function applySectionCollapse(category, forceOpen = false) {
+      const body = document.getElementById("body" + category);
+      const chev = document.getElementById("chevron" + category);
+
+      let collapsed = collapsedState[category];
+      if (forceOpen) {
+        collapsed = false;
+        collapsedState[category] = false;
+        localStorage.setItem("setupCollapsed_" + category, "0");
+      }
+
+      if (collapsed) {
+        body.classList.add("hidden");
+        chev.textContent = "▸";
+      } else {
+        body.classList.remove("hidden");
+        chev.textContent = "▾";
+      }
     }
 
     function render() {
@@ -313,10 +382,14 @@
       const totalAll = regularItems.reduce((s, i) => s + (i.amount || 0), 0);
       document.getElementById("totalAllDisplay").textContent = totalAll + " Kč";
 
-      // pokud nic needituješ, smaž info labely a texty tlačítek
       if (editingIndex === null) {
         resetEditUI();
       }
+
+      // použij uložený stav sbalení
+      applySectionCollapse("NUTNE");
+      applySectionCollapse("DOBROVOLNE");
+      applySectionCollapse("PROMENLIVE");
     }
 
     function renderList(listId, items, totalId) {
@@ -399,7 +472,6 @@
       if (!amount) return;
 
       if (editingIndex !== null) {
-        // Ukládáme změnu existující položky
         regularItems[editingIndex] = {
           category,
           name: name || "",
@@ -407,7 +479,6 @@
         };
         editingIndex = null;
       } else {
-        // Přidáváme novou položku
         regularItems.push({
           category,
           name: name || "",
@@ -431,7 +502,6 @@
       const item = regularItems[index];
       editingIndex = index;
 
-      // vyplnit správná pole podle kategorie
       let nameId, amountId, btnId, labelId;
       if (item.category === "NUTNE") {
         nameId = "nutneName"; amountId = "nutneAmount";
@@ -443,6 +513,9 @@
         nameId = "promName"; amountId = "promAmount";
         btnId = "promBtn"; labelId = "promEditLabel";
       }
+
+      // při editaci sekci rovnou rozbal
+      applySectionCollapse(item.category, true);
 
       document.getElementById(nameId).value = item.name || "";
       document.getElementById(amountId).value = item.amount || "";
